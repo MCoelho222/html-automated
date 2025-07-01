@@ -1,9 +1,10 @@
-name: Update Climate Dashboard
+name: Build Climate Dashboard
 
 on:
   push:
     paths:
       - 'data/anomalies.json'
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -11,20 +12,78 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Validate JSON
-        uses: limitusus/jsonlint@v1
-        with:
-          file: data/anomalies.json
+      - name: Validate anomalies.json
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          if ! jq '.' data/anomalies.json > /dev/null; then
+            echo "Invalid JSON"
+            exit 1
+          fi
+        shell: bash
 
-      - name: Validate HTML file
-        uses: htmlhint/htmlhint-action@v1.1.1
-        with:
-          file: index.html
+      - name: Rebuild HTML with latest data
+        run: |
+          jq -c . data/anomalies.json > tmp.json
+          echo '<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>Climate Dashboard</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+.anomaly { padding: 5px; margin: 3px 0; border-radius: 4px; display: inline-block; min-width: 40px; text-align: center; }
+.above { background-color: rgba(255, 0, 0, 0.2); color: darkred; }
+.below { background-color: rgba(0, 0, 255, 0.2); color: darkblue; }
+.toggle { margin-bottom: 10px; }
+.container { max-width: 600px; margin: auto; }
+@media (max-width: 600px) {
+  body { margin: 10px; }
+  .anomaly { min-width: 30px; font-size: 0.9em; }
+}
+</style></head><body>
+<div class="container">
+<label class="toggle"><input type="checkbox" id="unitToggle"> Show in Fahrenheit</label>
+<div id="dataHolder"></div></div>
+<script>
+const data = ' > index.html
+          cat tmp.json >> index.html
+          echo ';
+const anomalies = JSON.parse(data);
+const container = document.getElementById("dataHolder");
+const toggle = document.getElementById("unitToggle");
+function render() {
+  const isF = toggle.checked;
+  container.innerHTML = "";
+  anomalies.forEach(entry => {
+    let t = entry.anomaly;
+    if (isF) t = t * 9/5 + 32;
+    const div = document.createElement("div");
+    div.className = "anomaly " + (entry.anomaly >= 0 ? "above" : "below");
+    div.textContent = t.toFixed(2) + (isF ? "°F" : "°C");
+    container.appendChild(div);
+  });
+}
+toggle.addEventListener("change", render);
+render();
+</script></body></html>' >> index.html
+        shell: bash
 
-      - name: Deploy to Github Pages
+      - name: Validate HTML
+        run: |
+          npm install -g htmlhint
+          htmlhint index.html
+        shell: bash
+
+      - name: Commit updated HTML
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add index.html
+          git commit -m "Regenerate dashboard with latest data" || echo "No changes to commit"
+          git push
+        shell: bash
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./
-
-      
