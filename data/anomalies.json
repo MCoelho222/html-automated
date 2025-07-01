@@ -8,5 +8,10 @@
   { "year": 2021, "anomaly": 0.84 },
   { "year": 2022, "anomaly": 0.89 },
   { "year": 2023, "anomaly": 1.12 },
-  { "year": 2024, "anomaly": 1.18 }
+  { "year": 2024, "anomaly": 1.18 },
+  { "year": 2035, "anomaly": 0.87 },
+  { "year": 2046, "anomaly": 0.99 },
+  { "year": 2047, "anomaly": 0.91 },
+  { "year": 2048, "anomaly": 0.85 }
+  
 ]
