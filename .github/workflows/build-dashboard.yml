@@ -1,4 +1,4 @@
-name: Build Climate Dashboard
+name: Update Climate Dashboard
 
 on:
   push:
@@ -10,17 +10,21 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Validate JSON file
-        run: |
-          if ! jq '.' data/anomalies.json > /dev/null; then
-            echo "Invalid JSON"
-            exit 1
-          fi
-        shell: bash
+
+      - name: Validate JSON
+        uses: limitusus/jsonlint@v1
+        with:
+          file: data/anomalies.json
+
       - name: Validate HTML file
-        run: |
-          npm install htmlhint
-          npx htmlhint index.html
-        shell: bash
+        uses: htmlhint/htmlhint-action@v1.1.1
+        with:
+          file: index.html
+
+      - name: Deploy to Github Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./
 
       
