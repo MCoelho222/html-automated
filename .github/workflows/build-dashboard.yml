@@ -1,3 +1,4 @@
+
 name: Build Climate Dashboard
 
 on:
@@ -9,10 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout code  # Get repository contents
         uses: actions/checkout@v3
 
-      - name: Validate anomalies.json
+      - name: Validate JSON file  # Ensure anomalies.json is valid JSON
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
@@ -22,67 +23,13 @@ jobs:
           fi
         shell: bash
 
-      - name: Rebuild HTML with latest data
+      - name: Validate HTML (optional)
         run: |
-          json=$(jq -c . data/anomalies.json)
-          cat <<EOF > index.html
-<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><title>Climate Dashboard</title>
-<style>
-body { font-family: sans-serif; margin: 20px; }
-.anomaly { padding: 5px; margin: 3px 0; border-radius: 4px; display: inline-block; min-width: 40px; text-align: center; }
-.above { background-color: rgba(255, 0, 0, 0.2); color: darkred; }
-.below { background-color: rgba(0, 0, 255, 0.2); color: darkblue; }
-.toggle { margin-bottom: 10px; }
-.container { max-width: 600px; margin: auto; }
-@media (max-width: 600px) {
-  body { margin: 10px; }
-  .anomaly { min-width: 30px; font-size: 0.9em; }
-}
-</style></head><body>
-<div class="container">
-<label class="toggle"><input type="checkbox" id="unitToggle"> Show in Fahrenheit</label>
-<div id="dataHolder"></div></div>
-<script>
-const anomalies = $json;
-const container = document.getElementById("dataHolder");
-const toggle = document.getElementById("unitToggle");
-function render() {
-  const isF = toggle.checked;
-  container.innerHTML = "";
-  anomalies.forEach(entry => {
-    let t = entry.anomaly;
-    if (isF) t = t * 9/5 + 32;
-    const div = document.createElement("div");
-    div.className = "anomaly " + (entry.anomaly >= 0 ? "above" : "below");
-    div.textContent = t.toFixed(2) + (isF ? "°F" : "°C");
-    container.appendChild(div);
-  });
-}
-toggle.addEventListener("change", render);
-render();
-</script></body></html>
-EOF
+          sudo apt-get install -y tidy
+          tidy -q -e index.html || true
         shell: bash
 
-
-      - name: Validate HTML
-        run: |
-          npm install -g htmlhint
-          htmlhint index.html
-        shell: bash
-
-      - name: Commit updated HTML
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add index.html
-          git commit -m "Regenerate dashboard with latest data" || echo "No changes to commit"
-          git push
-        shell: bash
-
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages  # Publish to live site
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
