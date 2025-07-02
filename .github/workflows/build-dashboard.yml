@@ -22,7 +22,7 @@ jobs:
           fi
         shell: bash
 
-            - name: Rebuild HTML with latest data
+      - name: Rebuild HTML with latest data
         run: |
           json=$(jq -c . data/anomalies.json)
           cat <<EOF > index.html
